@@ -1,6 +1,7 @@
 from collections.abc import Sequence
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -35,12 +36,18 @@ async def create_product(*, session: SessionDep, product: ProductCreate) -> Prod
 
 
 @router.get("/", response_model=list[ProductPublicWithCategory])
-async def read_products(*, session: SessionDep) -> Sequence[Product]:
-    result = await session.execute(
-        select(Product)
-        .options(selectinload(Product.category))
-        .where(Product.is_active, Category.is_active)
-    )
+async def read_products(
+    *,
+    session: SessionDep,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(gt=0)] = 100,
+    active: bool | None = None,
+) -> Sequence[Product]:
+    query = select(Product).options(selectinload(Product.category))
+    if active is not None:
+        query = query.where(Product.is_active, Category.is_active)
+
+    result = await session.execute(query.offset(offset).limit(limit))
 
     return result.scalars().all()
 
@@ -50,16 +57,16 @@ async def read_product(*, session: SessionDep, product_id: int) -> Product:
     result = await session.execute(
         select(Product)
         .options(selectinload(Product.category))
-        .where(Product.id == product_id, Product.is_active, Category.is_active)
+        .where(Product.id == product_id)
     )
-    db_product = result.scalars().first()
-    if not db_product:
+    product = result.scalars().first()
+    if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=rf"Category {product_id} not found or is inactive",
+            detail=rf"Category {product_id} not found",
         )
 
-    return db_product
+    return product
 
 
 @router.patch("/{product_id}", response_model=ProductPublicWithCategory)
@@ -71,6 +78,16 @@ async def update_product(
     if not db_product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
+
+    result = await session.execute(
+        select(Category).where(Category.id == product.category_id, Category.is_active)
+    )
+    db_category = result.scalars().first()
+    if not db_category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=rf"Category {product.category_id} not found or is inactive",
         )
 
     product_data = product.model_dump(exclude_unset=True)

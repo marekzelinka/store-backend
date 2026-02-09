@@ -1,6 +1,7 @@
 from collections.abc import Sequence
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.deps import SessionDep
@@ -22,9 +23,18 @@ async def create_category(*, session: SessionDep, category: CategoryCreate) -> C
 
 
 @router.get("/", response_model=list[CategoryPublic])
-async def read_categories(*, session: SessionDep) -> Sequence[Category]:
-    # TODO: Refactor, add is_active param to url
-    result = await session.execute(select(Category).where(Category.is_active))
+async def read_categories(
+    *,
+    session: SessionDep,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(gt=0)] = 100,
+    active: bool | None = None,
+) -> Sequence[Category]:
+    query = select(Category)
+    if active is not None:
+        query = query.where(Category.is_active == active)
+
+    result = await session.execute(query.offset(offset).limit(limit))
 
     return result.scalars().all()
 
