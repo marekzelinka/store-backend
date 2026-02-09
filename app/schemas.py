@@ -8,11 +8,17 @@ class CategoryCreate(BaseModel):
     name: Annotated[str, Field(min_length=3, max_length=50)]
 
 
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+    is_active: bool | None = None
+
+
 class CategoryPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
+    is_active: bool
 
 
 class ProductCreate(BaseModel):
@@ -22,6 +28,16 @@ class ProductCreate(BaseModel):
     stock: Annotated[int, Field(ge=0)]
 
     category_id: int
+
+
+class ProductUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    price: Decimal | None = None
+    stock: int | None = None
+    is_active: bool | None = None
+
+    category_id: int | None = None
 
 
 class ProductPublic(BaseModel):
@@ -35,3 +51,7 @@ class ProductPublic(BaseModel):
     is_active: bool
 
     category_id: int
+
+
+class ProductPublicWithCategory(ProductPublic):
+    category: CategoryPublic

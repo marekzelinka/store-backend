@@ -34,7 +34,6 @@ select = [
     "SIM",      # Common simplification rules
     "TID",      # Some good import practices
     "PTH",      # Use pathlib instead of os.path
-    "TD",       # Be diligent with TODO comments
     "NPY",      # Some numpy-specific things
     "RUF",      # Ruff-specific rules
     "ARG001",   # unused arguments in functions
@@ -43,9 +42,6 @@ select = [
     "FAST",     # FastAPI
     "ASYNC",    # flake8-async (crucial for FastAPI/Async SQLAlchemy)
 ]
-
-[tool.ruff.format]
-quote-style = "single"
 
 [dependency-groups]
 dev = [
