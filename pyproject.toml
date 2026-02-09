@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "aiosqlite>=0.22.1",
+    "alembic>=1.18.3",
     "fastapi>=0.128.5",
     "pydantic>=2.12.5",
     "pydantic-settings>=2.12.0",
@@ -18,6 +19,12 @@ project-includes = [
     "**/*.py*",
     "**/*.ipynb",
 ]
+project-excludes= [
+    "alembic/versions/**/*.py"
+]
+
+[tool.ruff]
+exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = [
