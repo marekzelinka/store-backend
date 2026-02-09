@@ -35,8 +35,9 @@ async def read_categories(
         query = query.where(Category.is_active == active)
 
     result = await session.execute(query.offset(offset).limit(limit))
+    categories = result.scalars().all()
 
-    return result.scalars().all()
+    return categories
 
 
 @router.patch("/{category_id}", response_model=CategoryPublic)

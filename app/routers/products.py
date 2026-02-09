@@ -7,7 +7,12 @@ from sqlalchemy.orm import selectinload
 
 from app.deps import SessionDep
 from app.models import Category, Product
-from app.schemas import ProductCreate, ProductPublicWithCategory, ProductUpdate
+from app.schemas import (
+    ProductCreate,
+    ProductPublic,
+    ProductPublicWithCategory,
+    ProductUpdate,
+)
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -48,8 +53,29 @@ async def read_products(
         query = query.where(Product.is_active, Category.is_active)
 
     result = await session.execute(query.offset(offset).limit(limit))
+    products = result.scalars().all()
 
-    return result.scalars().all()
+    return products
+
+
+@router.get("/categories/{category_id}", response_model=list[ProductPublic])
+async def read_products_by_category(
+    *, session: SessionDep, category_id: int
+) -> Sequence[Product]:
+    result = await session.execute(select(Category).where(Category.id == category_id))
+    category = result.scalars().first()
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=rf"Category {category_id} not found",
+        )
+
+    result = await session.execute(
+        select(Product).where(Product.category_id == category_id)
+    )
+    products = result.scalars().all()
+
+    return products
 
 
 @router.get("/{product_id}", response_model=ProductPublicWithCategory)
