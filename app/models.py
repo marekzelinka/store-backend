@@ -12,21 +12,29 @@ class Category(Base):
     __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(length=50))
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    name: Mapped[str] = mapped_column(String(length=50), nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False, index=True
+    )
 
-    products: Mapped[list[Product]] = relationship("Product", back_populates="category")
+    products: Mapped[list[Product]] = relationship(
+        back_populates="category", cascade="all, delete-orphan"
+    )
 
 
 class Product(Base):
     __tablename__ = "products"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(length=100))
+    name: Mapped[str] = mapped_column(String(length=100), nullable=False)
     description: Mapped[str | None] = mapped_column(String(length=500), nullable=True)
-    price: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=2))
-    stock: Mapped[int] = mapped_column(Integer())
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    price: Mapped[Decimal] = mapped_column(
+        Numeric(precision=10, scale=2), nullable=False
+    )
+    stock: Mapped[int] = mapped_column(Integer(), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    category_id: Mapped[int] = mapped_column(Integer, ForeignKey("categories.id"))
-    category: Mapped[Category] = relationship("Category", back_populates="products")
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("categories.id"), nullable=False, index=True
+    )
+    category: Mapped[Category] = relationship(back_populates="products")
