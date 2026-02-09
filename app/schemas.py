@@ -56,3 +56,7 @@ class ProductPublic(ProductBase):
 
 class ProductPublicWithCategory(ProductPublic):
     category: CategoryPublic
+
+
+class Message(BaseModel):
+    message: str

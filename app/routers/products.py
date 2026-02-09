@@ -2,12 +2,13 @@ from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 
 from app.deps import SessionDep
 from app.models import Category, Product
 from app.schemas import (
+    Message,
     ProductCreate,
     ProductPublic,
     ProductPublicWithCategory,
@@ -50,8 +51,7 @@ async def read_products(
 ) -> Sequence[Product]:
     query = select(Product).options(selectinload(Product.category))
     if active is not None:
-        query = query.where(Product.is_active, Category.is_active)
-
+        query = query.where(Product.is_active == active)
     result = await session.execute(query.offset(offset).limit(limit))
     products = result.scalars().all()
 
@@ -60,7 +60,12 @@ async def read_products(
 
 @router.get("/categories/{category_id}", response_model=list[ProductPublic])
 async def read_products_by_category(
-    *, session: SessionDep, category_id: int
+    *,
+    session: SessionDep,
+    category_id: int,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(gt=0)] = 100,
+    active: bool | None = None,
 ) -> Sequence[Product]:
     result = await session.execute(select(Category).where(Category.id == category_id))
     category = result.scalars().first()
@@ -70,9 +75,10 @@ async def read_products_by_category(
             detail=rf"Category {category_id} not found",
         )
 
-    result = await session.execute(
-        select(Product).where(Product.category_id == category_id)
-    )
+    query = select(Product).where(Product.category_id == category_id)
+    if active is not None:
+        query = query.where(Product.is_active == active)
+    result = await session.execute(query.offset(offset).limit(limit))
     products = result.scalars().all()
 
     return products
@@ -106,15 +112,18 @@ async def update_product(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
         )
 
-    result = await session.execute(
-        select(Category).where(Category.id == product.category_id, Category.is_active)
-    )
-    db_category = result.scalars().first()
-    if not db_category:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=rf"Category {product.category_id} not found or is inactive",
+    if product.category_id is not None:
+        result = await session.execute(
+            select(Category).where(
+                Category.id == product.category_id, Category.is_active
+            )
         )
+        category = result.scalars().first()
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=rf"Category {product.category_id} not found or is inactive",
+            )
 
     product_data = product.model_dump(exclude_unset=True)
     for field, value in product_data.items():
@@ -124,6 +133,17 @@ async def update_product(
     await session.refresh(db_product, attribute_names=["category"])
 
     return db_product
+
+
+@router.patch("/bulk/mark-as-active")
+async def mark_all_products_as_active(*, session: SessionDep) -> Message:
+    await session.execute(
+        update(Product).where(Product.is_active.is_not(True)).values(is_active=True)
+    )
+
+    await session.commit()
+
+    return Message(message="All invactive products marked as active")
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
