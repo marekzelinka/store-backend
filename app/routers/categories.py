@@ -33,7 +33,6 @@ async def read_categories(
     query = select(Category)
     if active is not None:
         query = query.where(Category.is_active == active)
-
     result = await session.execute(query.offset(offset).limit(limit))
     categories = result.scalars().all()
 
@@ -65,12 +64,12 @@ async def update_category(
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(*, session: SessionDep, category_id: int) -> None:
     result = await session.execute(select(Category).where(Category.id == category_id))
-    db_category = result.scalars().first()
-    if not db_category:
+    category = result.scalars().first()
+    if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=rf"Category {category_id} not found",
         )
 
-    await session.delete(db_category)
+    await session.delete(category)
     await session.commit()
