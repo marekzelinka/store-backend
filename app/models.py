@@ -1,7 +1,7 @@
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Integer, Numeric, String
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -15,6 +15,8 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String(length=50))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    products: Mapped[list[Product]] = relationship('Product', back_populates='category')
+
 
 class Product(Base):
     __tablename__ = 'products'
@@ -25,3 +27,6 @@ class Product(Base):
     price: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=2))
     stock: Mapped[int] = mapped_column(Integer())
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    category_id: Mapped[int] = mapped_column(Integer, ForeignKey('categories.id'))
+    category: Mapped[Category] = relationship('Category', back_populates='products')

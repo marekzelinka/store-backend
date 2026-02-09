@@ -21,6 +21,8 @@ class ProductCreate(BaseModel):
     price: Annotated[Decimal, Field(gt=Decimal(0))]
     stock: Annotated[int, Field(ge=0)]
 
+    category_id: int
+
 
 class ProductPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -31,3 +33,5 @@ class ProductPublic(BaseModel):
     price: Annotated[Decimal, Field(gt=Decimal(0), decimal_places=2)]
     stock: int
     is_active: bool
+
+    category_id: int

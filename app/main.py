@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.core.db import engine
 from app.models import Base
-from app.routers import categories
+from app.routers import categories, products
 
 
 @asynccontextmanager
@@ -23,3 +23,4 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(categories.router)
+app.include_router(products.router)
