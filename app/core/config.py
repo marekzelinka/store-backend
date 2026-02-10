@@ -1,7 +1,7 @@
 import re
 from typing import Annotated
 
-from pydantic import PostgresDsn, UrlConstraints, computed_field
+from pydantic import PostgresDsn, SecretStr, UrlConstraints, computed_field
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -28,6 +28,10 @@ class Settings(BaseSettings):
         url = re.sub(r"[?&]channel_binding=[^&]*", "", url)
 
         return PostgresDsn(url)
+
+    secret_key: SecretStr
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
 
 
 config = Settings()
