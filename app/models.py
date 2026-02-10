@@ -31,6 +31,7 @@ class Product(Base):
     price: Mapped[Decimal] = mapped_column(
         Numeric(precision=10, scale=2), nullable=False
     )
+    image_url: Mapped[str] = mapped_column(String(200), nullable=False)
     stock: Mapped[int] = mapped_column(Integer(), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 

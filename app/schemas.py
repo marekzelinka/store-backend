@@ -28,6 +28,7 @@ class ProductBase(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=500)
     price: Decimal = Field(gt=Decimal(0), decimal_places=3, max_digits=5)
+    image_url: str | None = Field(default=None, max_length=200)
     stock: int = Field(ge=0)
 
     category_id: int
@@ -41,6 +42,7 @@ class ProductUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     price: Decimal | None = None
+    image_url: str | None = None
     stock: int | None = None
     is_active: bool | None = None
 
