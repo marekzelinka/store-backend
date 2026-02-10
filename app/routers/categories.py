@@ -13,6 +13,21 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=CategoryPublic)
 async def create_category(*, session: SessionDep, category: CategoryCreate) -> Category:
+    if category.parent_id is not None:
+        result = await session.execute(
+            select(Category).where(
+                Category.id == category.parent_id, Category.is_active
+            )
+        )
+        parent_category = result.scalars().first()
+        if not parent_category:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Parent category {str(category.parent_id)!r} not found or inactive"
+                ),
+            )
+
     db_category = Category(**category.model_dump())
 
     session.add(db_category)
@@ -50,6 +65,22 @@ async def update_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Category {str(category_id)!r} not found or inactive",
         )
+
+    if category.parent_id is not None:
+        result = await session.execute(
+            select(Category).where(
+                Category.id == category.parent_id, Category.is_active
+            )
+        )
+        parent_category = result.scalars().first()
+        if not parent_category:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Parent category {str(category.parent_id)!r} not found or inactive"
+                ),
+            )
+
     category_data = category.model_dump(exclude_unset=True)
     for field, value in category_data.items():
         setattr(db_category, field, value)

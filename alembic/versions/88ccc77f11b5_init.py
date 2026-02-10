@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 80c1aa82de21
+Revision ID: 88ccc77f11b5
 Revises: 
-Create Date: 2026-02-10 12:56:43.234808
+Create Date: 2026-02-10 14:52:05.362173
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '80c1aa82de21'
+revision: str = '88ccc77f11b5'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,10 +25,13 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['parent_id'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_categories_id'), 'categories', ['id'], unique=False)
     op.create_index(op.f('ix_categories_is_active'), 'categories', ['is_active'], unique=False)
+    op.create_index(op.f('ix_categories_parent_id'), 'categories', ['parent_id'], unique=False)
     op.create_table('products',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
@@ -52,6 +55,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_products_id'), table_name='products')
     op.drop_index(op.f('ix_products_category_id'), table_name='products')
     op.drop_table('products')
+    op.drop_index(op.f('ix_categories_parent_id'), table_name='categories')
     op.drop_index(op.f('ix_categories_is_active'), table_name='categories')
     op.drop_index(op.f('ix_categories_id'), table_name='categories')
     op.drop_table('categories')

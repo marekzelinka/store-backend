@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Self
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -21,6 +22,13 @@ class Category(Base):
     products: Mapped[list[Product]] = relationship(
         "Product", back_populates="category", cascade="all, delete-orphan"
     )
+    parent_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("categories.id"), nullable=True, index=True
+    )
+    parent: Mapped[Self | None] = relationship(
+        "Category", back_populates="children", remote_side="Category.id"
+    )
+    children: Mapped[list[Self]] = relationship("Category", back_populates="parent")
 
 
 class Product(Base):

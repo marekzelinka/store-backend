@@ -109,8 +109,7 @@ async def read_product(*, session: SessionDep, product_id: int) -> Product:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                rf"Product category {str(product.category_id)!r}"
-                "not found or inactive"
+                rf"Product category {str(product.category_id)!r} not found or inactive"
             ),
         )
 
@@ -142,8 +141,7 @@ async def update_product(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
-                    rf"Category {str(product.category_id)!r} not found"
-                    " or is inactive"
+                    rf"Category {str(product.category_id)!r} not found or is inactive"
                 ),
             )
 
