@@ -4,7 +4,6 @@ from app.core.config import config
 
 engine = create_async_engine(
     str(config.sqlalchemy_database_url),
-    connect_args={"check_same_thread": False},
     echo=True,
 )
 SessionLocal = async_sessionmaker(
