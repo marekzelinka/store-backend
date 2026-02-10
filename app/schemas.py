@@ -12,7 +12,7 @@ class CategoryCreate(CategoryBase):
 
 
 class CategoryUpdate(BaseModel):
-    name: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=50)
     is_active: bool | None = None
 
 
@@ -39,11 +39,13 @@ class ProductCreate(ProductBase):
 
 
 class ProductUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    price: Decimal | None = None
-    image_url: str | None = None
-    stock: int | None = None
+    name: str | None = Field(default=None, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    price: Decimal | None = Field(
+        default=None, gt=Decimal(0), decimal_places=3, max_digits=5
+    )
+    image_url: str | None = Field(default=None, max_length=200)
+    stock: int | None = Field(default=None, ge=0)
     is_active: bool | None = None
 
     category_id: int | None = None
@@ -53,12 +55,9 @@ class ProductPublic(ProductBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
     is_active: bool
 
 
 class ProductPublicWithCategory(ProductPublic):
     category: CategoryPublic
-
-
-class Message(BaseModel):
-    message: str
