@@ -8,7 +8,6 @@ from sqlalchemy.orm import selectinload
 from app.deps import SessionDep
 from app.models import Category, Product
 from app.schemas import (
-    Message,
     ProductCreate,
     ProductPublic,
     ProductPublicWithCategory,
@@ -25,11 +24,11 @@ async def create_product(*, session: SessionDep, product: ProductCreate) -> Prod
     result = await session.execute(
         select(Category).where(Category.id == product.category_id, Category.is_active)
     )
-    db_category = result.scalars().first()
-    if not db_category:
+    category = result.scalars().first()
+    if not category:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=rf"Category {product.category_id} not found or is inactive",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=rf"Category {str(product.category_id)!r} not found or inactive",
         )
 
     db_product = Product(**product.model_dump())
@@ -47,11 +46,12 @@ async def read_products(
     session: SessionDep,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
-    active: bool | None = None,
 ) -> Sequence[Product]:
-    query = select(Product).options(selectinload(Product.category))
-    if active is not None:
-        query = query.where(Product.is_active == active)
+    query = (
+        select(Product)
+        .options(selectinload(Product.category))
+        .where(Product.is_active, Category.is_active)
+    )
     result = await session.execute(query.offset(offset).limit(limit))
     products = result.scalars().all()
 
@@ -65,20 +65,23 @@ async def read_products_by_category(
     category_id: int,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
-    active: bool | None = None,
 ) -> Sequence[Product]:
-    result = await session.execute(select(Category).where(Category.id == category_id))
+    result = await session.execute(
+        select(Category).where(Category.id == category_id, Category.is_active)
+    )
     category = result.scalars().first()
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=rf"Category {category_id} not found",
+            detail=rf"Category {str(category_id)!r} not found or inactive",
         )
 
-    query = select(Product).where(Product.category_id == category_id)
-    if active is not None:
-        query = query.where(Product.is_active == active)
-    result = await session.execute(query.offset(offset).limit(limit))
+    result = await session.execute(
+        select(Product)
+        .where(Product.category_id == category_id, Product.is_active)
+        .offset(offset)
+        .limit(limit)
+    )
     products = result.scalars().all()
 
     return products
@@ -89,13 +92,26 @@ async def read_product(*, session: SessionDep, product_id: int) -> Product:
     result = await session.execute(
         select(Product)
         .options(selectinload(Product.category))
-        .where(Product.id == product_id)
+        .where(Product.id == product_id, Product.is_active)
     )
     product = result.scalars().first()
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=rf"Category {product_id} not found",
+            detail=rf"Category {str(product_id)!r} not found or inactive",
+        )
+
+    result = await session.execute(
+        select(Category).where(Category.id == product.category_id, Category.is_active)
+    )
+    category = result.scalars().first()
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                rf"Product category {str(product.category_id)!r}"
+                "not found or inactive"
+            ),
         )
 
     return product
@@ -105,11 +121,14 @@ async def read_product(*, session: SessionDep, product_id: int) -> Product:
 async def update_product(
     *, session: SessionDep, product_id: int, product: ProductUpdate
 ) -> Product:
-    result = await session.execute(select(Product).where(Product.id == product_id))
+    result = await session.execute(
+        select(Product).where(Product.id == product_id, Product.is_active)
+    )
     db_product = result.scalars().first()
     if not db_product:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=rf"Product {str(product_id)!r} not found or inactive",
         )
 
     if product.category_id is not None:
@@ -121,8 +140,11 @@ async def update_product(
         category = result.scalars().first()
         if not category:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=rf"Category {product.category_id} not found or is inactive",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    rf"Category {str(product.category_id)!r} not found"
+                    " or is inactive"
+                ),
             )
 
     product_data = product.model_dump(exclude_unset=True)
@@ -135,19 +157,17 @@ async def update_product(
     return db_product
 
 
-@router.patch("/bulk/mark-as-active")
-async def mark_all_products_as_active(*, session: SessionDep) -> Message:
+@router.patch("/bulk/activate", status_code=status.HTTP_200_OK)
+async def mark_all__products_as_active(*, session: SessionDep) -> None:
     await session.execute(
-        update(Product).where(Product.is_active.is_not(True)).values(is_active=True)
+        update(Product).where(~Product.is_active).values(is_active=True)
     )
 
     await session.commit()
 
-    return Message(message="All invactive products marked as active")
 
-
-@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_product(*, session: SessionDep, product_id: int) -> None:
+@router.patch("/{product_id}/deactivate", response_model=ProductPublic)
+async def mark_product_as_inactive(*, session: SessionDep, product_id: int) -> Product:
     result = await session.execute(select(Product).where(Product.id == product_id))
     product = result.scalars().first()
     if not product:
@@ -156,5 +176,9 @@ async def delete_product(*, session: SessionDep, product_id: int) -> None:
             detail=rf"Product {product_id} not found",
         )
 
-    await session.delete(product)
+    product.is_active = False
+
     await session.commit()
+    await session.refresh(product)
+
+    return product

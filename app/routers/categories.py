@@ -28,12 +28,10 @@ async def read_categories(
     session: SessionDep,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
-    active: bool | None = None,
 ) -> Sequence[Category]:
-    query = select(Category)
-    if active is not None:
-        query = query.where(Category.is_active == active)
-    result = await session.execute(query.offset(offset).limit(limit))
+    result = await session.execute(
+        select(Category).where(Category.is_active).offset(offset).limit(limit)
+    )
     categories = result.scalars().all()
 
     return categories
@@ -43,14 +41,15 @@ async def read_categories(
 async def update_category(
     *, session: SessionDep, category_id: int, category: CategoryUpdate
 ) -> Category:
-    result = await session.execute(select(Category).where(Category.id == category_id))
+    result = await session.execute(
+        select(Category).where(Category.id == category_id, Category.is_active)
+    )
     db_category = result.scalars().first()
     if not db_category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Category {category_id} not found",
+            detail=f"Category {str(category_id)!r} not found or inactive",
         )
-
     category_data = category.model_dump(exclude_unset=True)
     for field, value in category_data.items():
         setattr(db_category, field, value)
@@ -61,15 +60,24 @@ async def update_category(
     return db_category
 
 
-@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_category(*, session: SessionDep, category_id: int) -> None:
+@router.patch(
+    "/{category_id}/deactivate",
+    response_model=CategoryPublic,
+)
+async def mark_category_as_inactive(
+    *, session: SessionDep, category_id: int
+) -> Category:
     result = await session.execute(select(Category).where(Category.id == category_id))
     category = result.scalars().first()
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=rf"Category {category_id} not found",
+            detail=rf"Category {str(category_id)!r} not found",
         )
 
-    await session.delete(category)
+    category.is_active = False
+
     await session.commit()
+    await session.refresh(category)
+
+    return category
