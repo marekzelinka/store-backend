@@ -2,10 +2,10 @@ from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from app.deps import SessionDep
+from app.deps import CurrentSellerDep, SessionDep
 from app.models import Category, Product
 from app.schemas import (
     ProductCreate,
@@ -20,7 +20,9 @@ router = APIRouter(prefix="/products", tags=["products"])
 @router.post(
     "/", status_code=status.HTTP_201_CREATED, response_model=ProductPublicWithCategory
 )
-async def create_product(*, session: SessionDep, product: ProductCreate) -> Product:
+async def create_product(
+    *, session: SessionDep, current_seller: CurrentSellerDep, product: ProductCreate
+) -> Product:
     result = await session.execute(
         select(Category).where(Category.id == product.category_id, Category.is_active)
     )
@@ -31,7 +33,7 @@ async def create_product(*, session: SessionDep, product: ProductCreate) -> Prod
             detail=rf"Category {str(product.category_id)!r} not found or inactive",
         )
 
-    db_product = Product(**product.model_dump())
+    db_product = Product(**product.model_dump(), seller_id=current_seller.id)
 
     session.add(db_product)
     await session.commit()
@@ -118,7 +120,11 @@ async def read_product(*, session: SessionDep, product_id: int) -> Product:
 
 @router.patch("/{product_id}", response_model=ProductPublicWithCategory)
 async def update_product(
-    *, session: SessionDep, product_id: int, product: ProductUpdate
+    *,
+    session: SessionDep,
+    current_seller: CurrentSellerDep,
+    product_id: int,
+    product: ProductUpdate,
 ) -> Product:
     result = await session.execute(
         select(Product).where(Product.id == product_id, Product.is_active)
@@ -128,6 +134,11 @@ async def update_product(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=rf"Product {str(product_id)!r} not found or inactive",
+        )
+    if db_product.seller_id != current_seller.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=r"You can only update your own products",
         )
 
     if product.category_id is not None:
@@ -155,23 +166,21 @@ async def update_product(
     return db_product
 
 
-@router.patch("/bulk/activate", status_code=status.HTTP_200_OK)
-async def mark_all__products_as_active(*, session: SessionDep) -> None:
-    await session.execute(
-        update(Product).where(~Product.is_active).values(is_active=True)
-    )
-
-    await session.commit()
-
-
 @router.patch("/{product_id}/deactivate", response_model=ProductPublic)
-async def mark_product_as_inactive(*, session: SessionDep, product_id: int) -> Product:
+async def mark_product_as_inactive(
+    *, session: SessionDep, current_seller: CurrentSellerDep, product_id: int
+) -> Product:
     result = await session.execute(select(Product).where(Product.id == product_id))
     product = result.scalars().first()
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=rf"Product {product_id} not found",
+        )
+    if product.seller_id != current_seller.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=r"You can only deactivate your own products",
         )
 
     product.is_active = False

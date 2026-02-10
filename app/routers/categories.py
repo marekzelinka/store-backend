@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from app.deps import SessionDep
+from app.deps import CurrentAdminDep, SessionDep
 from app.models import Category
 from app.schemas import CategoryCreate, CategoryPublic, CategoryUpdate
 
@@ -12,7 +12,9 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=CategoryPublic)
-async def create_category(*, session: SessionDep, category: CategoryCreate) -> Category:
+async def create_category(
+    *, session: SessionDep, _current_admin: CurrentAdminDep, category: CategoryCreate
+) -> Category:
     if category.parent_id is not None:
         result = await session.execute(
             select(Category).where(
@@ -54,7 +56,11 @@ async def read_categories(
 
 @router.patch("/{category_id}", response_model=CategoryPublic)
 async def update_category(
-    *, session: SessionDep, category_id: int, category: CategoryUpdate
+    *,
+    session: SessionDep,
+    _current_admin: CurrentAdminDep,
+    category_id: int,
+    category: CategoryUpdate,
 ) -> Category:
     result = await session.execute(
         select(Category).where(Category.id == category_id, Category.is_active)
@@ -96,7 +102,7 @@ async def update_category(
     response_model=CategoryPublic,
 )
 async def mark_category_as_inactive(
-    *, session: SessionDep, category_id: int
+    *, session: SessionDep, _current_admin: CurrentAdminDep, category_id: int
 ) -> Category:
     result = await session.execute(select(Category).where(Category.id == category_id))
     category = result.scalars().first()
