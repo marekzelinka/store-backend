@@ -72,6 +72,19 @@ async def get_current_seller(current_user: CurrentActiveUserDep) -> User:
 CurrentSellerDep = Annotated[User, Depends(get_current_seller)]
 
 
+async def get_current_buyer(current_user: CurrentActiveUserDep) -> User:
+    if current_user.role != "buyer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only buyers can perform this action",
+        )
+
+    return current_user
+
+
+CurrentBuyerDep = Annotated[User, Depends(get_current_buyer)]
+
+
 async def get_current_admin(current_user: CurrentActiveUserDep) -> User:
     if current_user.role != "admin":
         raise HTTPException(
