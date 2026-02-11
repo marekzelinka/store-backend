@@ -97,3 +97,31 @@ class ProductPublic(ProductBase):
 
 class ProductPublicWithCategory(ProductPublic):
     category: CategoryPublic
+
+
+# -------------------------------------------------------------------------
+# -------------------------------------------------------------------------
+# -------------------------------------------------------------------------
+
+
+class ReviewtBase(BaseModel):
+    comment: str | None = Field(max_length=500)
+    grade: int = Field(ge=1, le=5)
+
+
+class ReviewCreate(ReviewtBase):
+    pass
+
+
+class ReviewUpdate(BaseModel):
+    comment: str | None = Field(default=None, max_length=500)
+    grade: int | None = Field(default=None, ge=1, le=5)
+
+
+class ReviewPublic(ProductBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    product_id: int
+    is_active: bool

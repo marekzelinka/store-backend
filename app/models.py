@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
+from functools import partial
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -36,6 +37,9 @@ class User(Base):
 
     products: Mapped[list[Product]] = relationship(
         back_populates="seller", cascade="all, delete-orphan"
+    )
+    reviews: Mapped[list[Review]] = relationship(
+        back_populates="reviewer", cascade="all, delete-orphan"
     )
     refresh_tokens: Mapped[list[RefreshToken]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
@@ -99,3 +103,27 @@ class Product(Base):
 
     category: Mapped[Category] = relationship(back_populates="products")
     seller: Mapped[User] = relationship(back_populates="products")
+    reviews: Mapped[list[Review]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
+    product_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("products.id"), nullable=False, index=True
+    )
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    grade: Mapped[int] = mapped_column(Integer(), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    commented_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=partial(datetime.now, tz=UTC)
+    )  # Use Timestamp instead of datetime, alseo in RefreshToken.expired_at
+
+    reviewer: Mapped[User] = relationship(back_populates="reviews")
+    product: Mapped[Product] = relationship(back_populates="reviews")
