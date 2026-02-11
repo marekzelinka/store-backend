@@ -93,18 +93,15 @@ class ProductPublic(ProductBase):
 
     id: int
     is_active: bool
+    rating: float
 
 
 class ProductPublicWithCategory(ProductPublic):
     category: CategoryPublic
 
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
-
 class ReviewtBase(BaseModel):
+    product_id: int
     comment: str | None = Field(max_length=500)
     grade: int = Field(ge=1, le=5)
 
@@ -118,10 +115,9 @@ class ReviewUpdate(BaseModel):
     grade: int | None = Field(default=None, ge=1, le=5)
 
 
-class ReviewPublic(ProductBase):
+class ReviewPublic(ReviewtBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     user_id: int
-    product_id: int
     is_active: bool

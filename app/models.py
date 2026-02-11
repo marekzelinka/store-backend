@@ -16,7 +16,6 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-
     username: Mapped[str] = mapped_column(
         String(length=50), nullable=False, unique=True
     )
@@ -51,13 +50,13 @@ class RefreshToken(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     token: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=False, index=True
-    )
     expired_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
 
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
     user: Mapped[User] = relationship(back_populates="refresh_tokens")
 
 
@@ -69,14 +68,15 @@ class Category(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False, index=True
     )
+
     parent_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("categories.id"), nullable=True, index=True
     )
-
     parent: Mapped[Category | None] = relationship(
         back_populates="children", remote_side="Category.id"
     )
     children: Mapped[list[Category]] = relationship(back_populates="parent")
+
     products: Mapped[list[Product]] = relationship(
         back_populates="category", cascade="all, delete-orphan"
     )
@@ -86,6 +86,7 @@ class Product(Base):
     __tablename__ = "products"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
     name: Mapped[str] = mapped_column(String(length=100), nullable=False)
     description: Mapped[str | None] = mapped_column(String(length=500), nullable=True)
     price: Mapped[Decimal] = mapped_column(
@@ -94,15 +95,19 @@ class Product(Base):
     image_url: Mapped[str | None] = mapped_column(String(length=200), nullable=True)
     stock: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    rating: Mapped[float] = mapped_column(
+        Numeric(asdecimal=False), default=0.0, nullable=False
+    )
     category_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("categories.id"), nullable=False, index=True
     )
+    category: Mapped[Category] = relationship(back_populates="products")
+
     seller_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=False, index=True
     )
-
-    category: Mapped[Category] = relationship(back_populates="products")
     seller: Mapped[User] = relationship(back_populates="products")
+
     reviews: Mapped[list[Review]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
     )
@@ -119,10 +124,10 @@ class Review(Base):
         Integer, ForeignKey("products.id"), nullable=False, index=True
     )
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
-    grade: Mapped[int] = mapped_column(Integer(), nullable=False)
+    grade: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     commented_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=partial(datetime.now, tz=UTC)
+        DateTime(timezone=True), default=partial(datetime.now, tz=UTC), nullable=False
     )  # Use Timestamp instead of datetime, alseo in RefreshToken.expired_at
 
     reviewer: Mapped[User] = relationship(back_populates="reviews")
