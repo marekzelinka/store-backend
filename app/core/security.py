@@ -1,3 +1,4 @@
+import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Final
 
@@ -7,9 +8,9 @@ from pwdlib import PasswordHash
 
 from app.core.config import config
 
-TOKEN_URL: Final[str] = "/token"
+LOGIN_URL: Final[str] = "/token"
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=TOKEN_URL)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=LOGIN_URL)
 
 
 password_hash = PasswordHash.recommended()
@@ -56,3 +57,11 @@ def verify_access_token(token: str) -> str | None:
         return None
     else:
         return payload.get("sub")
+
+
+def generate_secure_token(nbytes: int = 32) -> str:
+    """
+    Generates a secure, random string for refresh tokens.
+    nbytes=32 creates a string roughly 43 characters long.
+    """
+    return secrets.token_urlsafe(nbytes)

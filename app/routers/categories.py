@@ -33,6 +33,7 @@ async def create_category(
     db_category = Category(**category.model_dump())
 
     session.add(db_category)
+
     await session.commit()
     await session.refresh(db_category)
 

@@ -34,8 +34,8 @@ async def create_product(
         )
 
     db_product = Product(**product.model_dump(), seller_id=current_seller.id)
-
     session.add(db_product)
+
     await session.commit()
     await session.refresh(db_product, attribute_names=["category"])
 

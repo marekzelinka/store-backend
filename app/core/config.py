@@ -30,8 +30,10 @@ class Settings(BaseSettings):
         return PostgresDsn(url)
 
     secret_key: SecretStr
+    refresh_secret_key: SecretStr
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    refresh_token_expire_minutes: int = 60 * 24 * 7  # 7 Days
 
 
 config = Settings()

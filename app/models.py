@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
-from typing import Self
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -35,8 +35,26 @@ class User(Base):
     #     abmind: auto()
 
     products: Mapped[list[Product]] = relationship(
-        "Product", back_populates="seller", cascade="all, delete-orphan"
+        back_populates="seller", cascade="all, delete-orphan"
     )
+    refresh_tokens: Mapped[list[RefreshToken]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    token: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
+    expired_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+    user: Mapped[User] = relationship(back_populates="refresh_tokens")
 
 
 class Category(Base):
@@ -51,12 +69,12 @@ class Category(Base):
         Integer, ForeignKey("categories.id"), nullable=True, index=True
     )
 
-    parent: Mapped[Self | None] = relationship(
-        "Category", back_populates="children", remote_side="Category.id"
+    parent: Mapped[Category | None] = relationship(
+        back_populates="children", remote_side="Category.id"
     )
-    children: Mapped[list[Self]] = relationship("Category", back_populates="parent")
+    children: Mapped[list[Category]] = relationship(back_populates="parent")
     products: Mapped[list[Product]] = relationship(
-        "Product", back_populates="category", cascade="all, delete-orphan"
+        back_populates="category", cascade="all, delete-orphan"
     )
 
 
@@ -79,5 +97,5 @@ class Product(Base):
         Integer, ForeignKey("users.id"), nullable=False, index=True
     )
 
-    category: Mapped[Category] = relationship("Category", back_populates="products")
-    seller: Mapped[User] = relationship("User", back_populates="products")
+    category: Mapped[Category] = relationship(back_populates="products")
+    seller: Mapped[User] = relationship(back_populates="products")

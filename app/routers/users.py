@@ -38,8 +38,8 @@ async def create_user(*, session: SessionDep, user: UserCreate) -> User:
         email=user.email.lower(),
         password_hash=hash_password(user.password),
     )
-
     session.add(db_user)
+
     await session.commit()
     await session.refresh(db_user)
 
