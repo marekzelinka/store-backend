@@ -1,6 +1,5 @@
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import Final
 
 import jwt
 from fastapi.security import OAuth2PasswordBearer
@@ -8,9 +7,7 @@ from pwdlib import PasswordHash
 
 from app.core.config import config
 
-LOGIN_URL: Final[str] = "/token"
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=LOGIN_URL)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
 password_hash = PasswordHash.recommended()

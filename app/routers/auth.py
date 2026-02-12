@@ -8,7 +8,6 @@ from sqlalchemy.orm import joinedload
 
 from app.core.config import config
 from app.core.security import (
-    LOGIN_URL,
     create_access_token,
     generate_secure_token,
     verify_password,
@@ -20,7 +19,7 @@ from app.schemas import RefreshTokenRequest, Token, UserPrivate
 router = APIRouter(tags=["auth"])
 
 
-@router.post(LOGIN_URL)
+@router.post("/token")
 async def login_for_access_token(
     *,
     session: SessionDep,
