@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
 from app.core.security import oauth2_scheme, verify_access_token
-from app.models import User
+from app.models import User, UserRole
 
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
@@ -60,7 +60,7 @@ CurrentActiveUserDep = Annotated[User, Depends(get_current_active_user)]
 
 
 async def get_current_seller(current_user: CurrentActiveUserDep) -> User:
-    if current_user.role != "seller":
+    if current_user.role != UserRole.seller:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only sellers can perform this action",
@@ -69,11 +69,11 @@ async def get_current_seller(current_user: CurrentActiveUserDep) -> User:
     return current_user
 
 
-CurrentSellerDep = Annotated[User, Depends(get_current_seller)]
+CurrentActiveSellerDep = Annotated[User, Depends(get_current_seller)]
 
 
 async def get_current_buyer(current_user: CurrentActiveUserDep) -> User:
-    if current_user.role != "buyer":
+    if current_user.role != UserRole.buyer:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only buyers can perform this action",
@@ -82,11 +82,11 @@ async def get_current_buyer(current_user: CurrentActiveUserDep) -> User:
     return current_user
 
 
-CurrentBuyerDep = Annotated[User, Depends(get_current_buyer)]
+CurrentActiveBuyerDep = Annotated[User, Depends(get_current_buyer)]
 
 
 async def get_current_admin(current_user: CurrentActiveUserDep) -> User:
-    if current_user.role != "admin":
+    if current_user.role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can perform this action",
@@ -95,4 +95,4 @@ async def get_current_admin(current_user: CurrentActiveUserDep) -> User:
     return current_user
 
 
-CurrentAdminDep = Annotated[User, Depends(get_current_admin)]
+CurrenActivetAdminDep = Annotated[User, Depends(get_current_admin)]

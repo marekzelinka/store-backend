@@ -13,8 +13,7 @@ from app.core.security import (
     verify_password,
 )
 from app.deps import CurrentActiveUserDep, SessionDep
-from app.models import RefreshToken, User
-from app.schemas import RefreshTokenRequest, Token, UserPrivate
+from app.models import RefreshToken, RefreshTokenRequest, Token, User
 
 router = APIRouter(tags=["auth"])
 
@@ -38,7 +37,7 @@ async def login_for_access_token(
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect email or password or user is inactive",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -70,7 +69,7 @@ async def login_for_access_token(
 
 @router.post("/refresh")
 async def refresh_access_token(
-    *, session: SessionDep, data: RefreshTokenRequest
+    *, session: SessionDep, _user: CurrentActiveUserDep, data: RefreshTokenRequest
 ) -> Token:
     result = await session.execute(
         select(RefreshToken)
@@ -133,7 +132,9 @@ async def refresh_access_token(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(*, session: SessionDep, data: RefreshTokenRequest) -> None:
+async def logout(
+    *, session: SessionDep, _user: CurrentActiveUserDep, data: RefreshTokenRequest
+) -> None:
     """
     Revokes a session by deleting the refresh token from the database.
     """
@@ -145,8 +146,3 @@ async def logout(*, session: SessionDep, data: RefreshTokenRequest) -> None:
         await session.delete(refresh_token)
 
         await session.commit()
-
-
-@router.get("/me", response_model=UserPrivate)
-async def read_current_user(*, current_user: CurrentActiveUserDep) -> User:
-    return current_user
