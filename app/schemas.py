@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -113,6 +114,7 @@ class ReviewCreate(ReviewtBase):
 class ReviewUpdate(BaseModel):
     comment: str | None = Field(default=None, max_length=500)
     grade: int | None = Field(default=None, ge=1, le=5)
+    is_active: bool | None = None
 
 
 class ReviewPublic(ReviewtBase):
@@ -121,3 +123,4 @@ class ReviewPublic(ReviewtBase):
     id: int
     user_id: int
     is_active: bool
+    created_at: datetime

@@ -123,10 +123,10 @@ class Review(Base):
     product_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("products.id"), nullable=False, index=True
     )
-    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    comment: Mapped[str | None] = mapped_column(Text(length=500), nullable=True)
     grade: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    commented_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=partial(datetime.now, tz=UTC), nullable=False
     )  # Use Timestamp instead of datetime, alseo in RefreshToken.expired_at
 
