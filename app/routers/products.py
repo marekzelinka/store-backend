@@ -58,7 +58,6 @@ async def read_products(
 ) -> Sequence[Product]:
     # Fetch products and assigned categories.
     # Ensue both the product and category are currently active.
-    # Using offset-based pagination to handle large lists.
     result = await session.execute(
         select(Product)
         .options(selectinload(Product.category))
@@ -99,7 +98,7 @@ async def read_product_reviews(
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
 ) -> Sequence[Review]:
-    # Fetch reviews that belong to this product
+    # Fetch reviews that belong to this product.
     result = await session.execute(
         select(Review)
         .join(Review.product)
@@ -112,7 +111,7 @@ async def read_product_reviews(
         .limit(limit)
     )
     reviews = result.scalars().all()
-    # Handle empty list as well as product not found or inactive
+    # Handle empty list as well as product not found or inactive.
     if not reviews:
         result = await session.execute(
             select(Product.id).where(Product.id == product_id, Product.is_active)
