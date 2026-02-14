@@ -57,7 +57,6 @@ async def read_categories(
     limit: Annotated[int, Query(gt=0)] = 100,
 ) -> Sequence[Category]:
     # Fetch top-level and nested categories that are currently active.
-    # Using offset-based pagination to handle large lists.
     result = await session.execute(
         select(Category).where(Category.is_active).offset(offset).limit(limit)
     )
