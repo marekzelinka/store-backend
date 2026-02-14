@@ -15,10 +15,7 @@ from app.routers import auth, categories, products, reviews, users
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     async with SessionLocal() as session:
         result = await session.execute(
-            select(User).where(
-                func.lower(User.username) == config.first_admin.lower(),
-                func.lower(User.email) == config.first_admin_email.lower(),
-            )
+            select(User).where(func.lower(User.username) == config.first_admin.lower())
         )
         admin = result.scalars().first()
         if not admin:

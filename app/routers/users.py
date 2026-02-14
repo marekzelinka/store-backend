@@ -1,9 +1,16 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import func, select
 
+from app.core.config import config
 from app.core.security import hash_password
 from app.deps import CurrentActiveUserDep, SessionDep
-from app.models import User, UserCreate, UserPrivate, UserUpdate
+from app.models import (
+    User,
+    UserCreate,
+    UserPrivate,
+    UserRole,
+    UserUpdate,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -46,15 +53,22 @@ async def create_user(*, session: SessionDep, user: UserCreate) -> User:
 
 
 @router.get("/me", response_model=UserPrivate)
-async def read_current_user(*, user: CurrentActiveUserDep) -> User:
-    return user
+async def read_current_user(*, current_active_user: CurrentActiveUserDep) -> User:
+    return current_active_user
 
 
 @router.patch("/me", response_model=UserPrivate)
 async def update_current_user(
-    *, session: SessionDep, user: CurrentActiveUserDep, updates: UserUpdate
+    *, session: SessionDep, current_user: CurrentActiveUserDep, user: UserUpdate
 ) -> User:
-    if updates.username is not None:
+    # First admin is special and cannot be updated.
+    if (
+        current_user.role == UserRole.admin
+        and current_user.username == config.first_admin
+    ):
+        return current_user
+
+    if user.username is not None:
         result = await session.execute(
             select(User).where(func.lower(User.username) == user.username.lower())
         )
@@ -65,11 +79,11 @@ async def update_current_user(
                 detail="Username already exists",
             )
 
-        user.username = updates.username
+        current_user.username = user.username
 
-    if updates.email is not None:
+    if user.email is not None:
         result = await session.execute(
-            select(User).where(func.lower(User.email) == user.email.lower())
+            select(User).where(func.lower(User.email) == current_user.email.lower())
         )
         duplicate_email_user = result.scalars().first()
         if duplicate_email_user:
@@ -77,12 +91,12 @@ async def update_current_user(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists"
             )
 
-        user.email = updates.email.lower()
+        current_user.email = user.email.lower()
 
-    if updates.password is not None:
-        user.password_hash = hash_password(updates.password)
+    if user.password is not None:
+        current_user.password_hash = hash_password(user.password)
 
     await session.commit()
-    await session.refresh(user)
+    await session.refresh(current_user)
 
-    return user
+    return current_user

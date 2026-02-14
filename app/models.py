@@ -73,11 +73,18 @@ class UserUpdate(BaseModel):
     password: str | None = None
 
 
-class UserPrivate(UserBase):
+class UserPublicBase(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class UserPublic(UserPublicBase):
     role: Literal[UserRole.seller, UserRole.buyer]
+
+
+class UserPrivate(UserPublicBase):
+    role: Literal[UserRole.seller, UserRole.buyer, UserRole.admin]
 
 
 class RefreshToken(Base):
@@ -187,7 +194,7 @@ class Product(Base):
 class ProductBase(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=100)]
     description: Annotated[str | None, Field(max_length=500)] = None
-    price: Annotated[Decimal, Field(gt=Decimal("0"), decimal_places=3, max_digits=5)]
+    price: Annotated[Decimal, Field(gt=Decimal("0"), decimal_places=2)]
     image_url: Annotated[str | None, Field(max_length=200)] = None
     stock: Annotated[int, Field(ge=0)]
     category_id: int
@@ -200,9 +207,7 @@ class ProductCreate(ProductBase):
 class ProductUpdate(BaseModel):
     name: Annotated[str | None, Field(max_length=100)] = None
     description: Annotated[str | None, Field(max_length=500)] = None
-    price: Annotated[
-        Decimal | None, Field(gt=Decimal(0), decimal_places=3, max_digits=5)
-    ] = None
+    price: Annotated[Decimal | None, Field(gt=Decimal(0), decimal_places=2)] = None
     image_url: Annotated[str | None, Field(max_length=200)] = None
     stock: Annotated[int | None, Field(ge=0)] = None
     is_active: bool | None = None
@@ -259,7 +264,7 @@ class ReviewUpdate(BaseModel):
     comment: Annotated[str | None, Field(max_length=500)] = None
     grade: Annotated[int | None, Field(ge=1, le=5)] = None
     product_id: int | None = None
-    is_active: int | None = None
+    is_active: bool | None = None
 
 
 class ReviewPublic(ReviewBase):
