@@ -49,7 +49,7 @@ async def create_product(
     return db_product
 
 
-@router.get("/", response_model=list[ProductPublicWithCategory])
+@router.get("", response_model=list[ProductPublicWithCategory])
 async def read_products(
     *,
     session: SessionDep,
