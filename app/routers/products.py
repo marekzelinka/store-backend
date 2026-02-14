@@ -21,12 +21,7 @@ from app.models import (
 router = APIRouter(prefix="/products", tags=["products"])
 
 
-@router.post(
-    "/",
-    tags=["seller"],
-    status_code=status.HTTP_201_CREATED,
-    response_model=ProductPrivate,
-)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=ProductPrivate)
 async def create_product(
     *,
     session: SessionDep,
@@ -132,7 +127,7 @@ async def read_product_reviews(
     return reviews
 
 
-@router.patch("/{product_id}", tags=["seller", "admin"], response_model=ProductPrivate)
+@router.patch("/{product_id}", response_model=ProductPrivate)
 async def update_product(
     *,
     session: SessionDep,

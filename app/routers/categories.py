@@ -18,12 +18,7 @@ from app.models import (
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 
-@router.post(
-    "/",
-    tags=["admin"],
-    status_code=status.HTTP_201_CREATED,
-    response_model=CategoryPrivate,
-)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=CategoryPrivate)
 async def create_category(
     *, session: SessionDep, _admin: CurrenActivetAdminDep, category: CategoryCreate
 ) -> Category:
@@ -54,7 +49,7 @@ async def create_category(
     return db_category
 
 
-@router.get("/", response_model=list[CategoryPublic])
+@router.get("", response_model=list[CategoryPublic])
 async def read_categories(
     *,
     session: SessionDep,
@@ -106,7 +101,7 @@ async def read_category_products(
     return products
 
 
-@router.patch("/{category_id}", tags=["admin"], response_model=CategoryPrivate)
+@router.patch("/{category_id}", response_model=CategoryPrivate)
 async def update_category(
     *,
     session: SessionDep,

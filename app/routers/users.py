@@ -9,7 +9,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post(
-    "/",
+    "",
     status_code=status.HTTP_201_CREATED,
     response_model=UserPrivate,
 )

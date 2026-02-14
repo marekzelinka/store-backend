@@ -47,12 +47,7 @@ async def update_product_rating(*, session: AsyncSession, product_id: int) -> No
     await session.commit()
 
 
-@router.post(
-    "/",
-    tags=["buyer"],
-    status_code=status.HTTP_201_CREATED,
-    response_model=ReviewPublic,
-)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=ReviewPublic)
 async def create_review(
     *, session: SessionDep, buyer: CurrentActiveBuyerDep, review: ReviewCreate
 ) -> Review:
@@ -97,7 +92,7 @@ async def create_review(
     return db_review
 
 
-@router.patch("/{review_id}", tags=["admin", "buyer"], response_model=ReviewPrivate)
+@router.patch("/{review_id}", response_model=ReviewPrivate)
 async def update_review(
     *,
     session: SessionDep,

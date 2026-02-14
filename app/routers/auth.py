@@ -108,6 +108,7 @@ async def refresh_access_token(
     # Create new pair
     new_refresh_token_expires = timedelta(minutes=config.refresh_token_expire_minutes)
     new_refresh_token = generate_secure_token()
+
     session.add(
         RefreshToken(
             token=new_refresh_token,
@@ -129,20 +130,3 @@ async def refresh_access_token(
         refresh_token=new_refresh_token,
         token_type="bearer",
     )
-
-
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(
-    *, session: SessionDep, _user: CurrentActiveUserDep, data: RefreshTokenRequest
-) -> None:
-    """
-    Revokes a session by deleting the refresh token from the database.
-    """
-    result = await session.execute(
-        select(RefreshToken).where(RefreshToken.token == data.refresh_token)
-    )
-    refresh_token = result.scalars().first()
-    if refresh_token:
-        await session.delete(refresh_token)
-
-        await session.commit()
